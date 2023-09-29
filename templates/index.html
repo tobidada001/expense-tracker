@@ -1,0 +1,238 @@
+{% load static %} {% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="{% static 'tailwind-all.min.css' %}" />
+  </head>
+  <body>
+    <nav class="h-20 bg-blue-700 text-white flex p-2">
+      <h1 class="font-bold text-3xl text-center" style="vertical-align: middle">
+        Django Expense Tracker
+      </h1>
+    </nav>
+
+    <div class="bg-gray-200 mt-5 p-2 mb-10">
+      <h2 class="font-semibold text-2xl text-blue-900 ml-5">Add Expenses...</h2>
+
+      <div class="m-5">
+        <form
+          action=""
+          method="POST"
+          class="md:flex md:justify-center sm:block"
+          style="column-gap: 10px"
+        >
+
+          {% csrf_token %} <input type="text" placeholder="Expense title"
+          name="expense_name" required value ="{{expense.name}}"" class="h-12
+          px-3 md:flex-grow rounded-lg w-full" />
+          <input
+            type="number"
+            placeholder="Amount"
+            required
+            value="{{expense.amount}}"
+            name="expense_amount"
+            class="h-12 px-3 md:flex-grow w-full sm:mt-0 mt-6 rounded-lg"
+          />
+       
+          <select name="expense_category" class="h-12 px-3 md:flex-grow w-full sm:mt-0 mt-6 rounded-lg"  id="">
+
+            {% for cat in  categories%}
+              
+              {% for key, value in cat.items %}
+                {% if expense.category == value or expense.category == key %}
+                <option value="{{key}}" selected>{{value}}</option>
+                {% else %}
+                <option value="{{key}}">{{value}}</option>
+                {% endif %}
+              {% endfor %}
+           
+            {% endfor %}
+          
+          </select>
+
+          <input
+            type="submit"
+            class="h-12 bg-blue-900 text-white w-10/12 sm:w-64 sm:mt-0 mt-12 rounded-lg"
+            value="Add"
+          />
+        </form>
+      </div>
+    </div>
+
+
+    <div class="h-70 px-4 bg-gray-100 m-2 pb-10 rounded">
+      <div class="h-16">
+        <h2 class="font-semibold text-2xl pt-6 text-blue-900">
+          Your Expenses...
+        </h2>
+      </div>
+
+      <div class="h-64 overflow-x-auto">
+        <table
+          class="table border-2 border-blue-200 mt-6 w-11/12 m-auto rounded overflow-x-scroll"
+        >
+          <thead class="h-20 shadow text-2xl">
+            <tr>
+              <th class="font-semibold">Expense Name</th>
+              <th class="font-semibold">Amount</th>
+              <th class="font-semibold">Category</th>
+              <th class="font-semibold">Edit</th>
+              <th class="font-semibold">Remove</th>
+            </tr>
+          </thead>
+
+          <tbody class="text-center">
+            {% for expense in expenses %}
+            <tr class="h-16">
+              <td>{{expense.name| capfirst}}</td>
+              <td>${{expense.amount| intcomma}}</td>
+              <td>{{expense.category| capfirst}}</td>
+              <td>
+                <a
+                  href="?edit_id={{expense.id}}"
+                  class="bg-blue-900 py-2 px-6 text-white rounded-full"
+                  >Edit</a
+                >
+              </td>
+              <td>
+                <a
+                  href="{% url 'delete' expense.id %}"
+                  class="bg-red-600 py-2 px-6 text-white rounded-full"
+                  >Delete</a
+                >
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="mt-16 md:ml-32 text-blue-600 font-bold text-2xl md:text-3xl">
+        Total: $ {{total.expense_total|intcomma}}
+      </p>
+    </div>
+
+    <div class="w-100 mt-20 md:flex justify-around py-3 font-bold text-2xl">
+      <div class="card shadow-md px-5 mx-5 py-8 text-center flex-grow">
+        <p class="text-orange-500 font-bold">LAST 7 DAYS</p>
+
+        {% if last_7_days.total_7_days %}
+        <p>${{last_7_days.total_7_days |intcomma }}</p>
+        {% else %}
+        <p>$ 0</p>
+        {% endif %}
+      </div>
+
+      <div class="card shadow-md px-5 mx-5 py-8 text-center flex-grow">
+        <p class="text-orange-500 font-bold">LAST 30 DAYS</p>
+        {% if last_30_days.total_30_days %}
+
+        <p>$ {{last_30_days.total_30_days | intcomma}}</p>
+        {% else %}
+        <p>$ 0</p>
+        {% endif %}
+      </div>
+
+      <div class="card shadow-md px-5 mx-5 flex-grow text-center py-8">
+        <p class="text-orange-500 font-bold">LAST 12 MONTHS</p>
+
+        {% if last_52_weeks.total_52_weeks %}
+        <p>$ {{last_52_weeks.total_52_weeks| intcomma}}</p>
+        {% else %}
+        <p>$ 0</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-24 lg:flex sm:mx-10 mx-3 rounded" style="column-gap: 3em">
+      <div class="flex-1 bg-gray-200 h-64">
+        <div
+          class="font-semibold text-2xl flex flex-col items-center justify-center shadow-md h-16"
+        >
+          <p>Past 30 Days Sum Expenses</p>
+        </div>
+      </div>
+
+      <div class="flex-1 bg-gray-200 h-64 lg:mt-0 mt-10">
+        <div
+          class="font-semibold text-2xl flex flex-col items-center justify-center shadow-md h-16"
+        >
+          <p>Categorical Expenses</p>
+        </div>
+      </div>
+    </div>
+
+
+
+
+
+    <h1 class="font-light text-5xl mt-16 ml-10">Expense Charts</h1>
+
+    <div
+      class="mt-10 sm:mx-10 mx-3 lg:flex rounded mb-48 h-auto"
+      style="column-gap: 3em">
+
+      <div class="flex-1 bg-gray-200 h-auto">
+
+        <div class="font-semibold text-2xl flex flex-col items-center justify-center shadow-md h-16">
+          <p>Graphical Data of Expenses in Categories</p>
+        </div>
+
+
+        <div class="py-12">
+          <canvas id="dataOfCategoryExpenses"> </canvas>
+        </div>
+       
+      </div>
+
+      <div class="flex-1 bg-gray-200 flex-wrap lg:mt-0 mt-8" >
+        <div
+          class="font-semibold text-2xl flex flex-col items-center justify-center shadow-md h-16">
+          <p>Daily Expense Sum</p>
+        </div>
+
+        <div class="py-12"><canvas id="dataOfDailyExpense"></canvas></div>
+        
+      </div>
+    </div>
+
+    <script src="{% static 'Chart.js' %}"></script>
+
+    <script>
+
+      var categoryCtx = document.getElementById('dataOfCategoryExpenses').getContext('2d')
+      var expensesCtx = document.getElementById('dataOfDailyExpense').getContext('2d')
+      var  catts = Array('Att', 'Damn', 'Shit')
+      console.log(catts)
+      var myChart = new Chart(categoryCtx, {
+        type: 'pie',
+        data: {  labels: catts,
+          datasets: [ {
+          label : 'Number of Categories',
+          data: [200, 433],  backgroundColor: ['rgba(40, 90, 120, 0.6)', 'rgba(120, 90, 200, 0.6)'],
+
+          borderColor: ['rgb(80,80,80)', 'rgb(40, 40, 40)'], borderWidth: 1  } ]
+        }
+      })
+
+     
+      var myChart = new Chart(expensesCtx, {
+        type: 'bar',
+        data: {  labels: catts,
+          datasets: [ {
+          label : 'Number of Categories',
+          data: [200, 433],  backgroundColor: ['#77492424', '#e7f23254'],
+
+          borderColor: ['rgb(80,80,80)', 'rgb(40, 40, 40)'], borderWidth: 1  } ]
+        }
+      })
+
+      
+
+
+    </script>
+  </body>
+</html>
