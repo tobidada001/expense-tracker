@@ -14,6 +14,28 @@
       </h1>
     </nav>
 
+
+
+    <div>
+      {% if messages %}
+        
+        {% for message in messages %}
+       
+        <p id="msg" class="py-8 mt-5 font-semibold text-2xl text-white text-center
+        
+        {% if message.tags == 'warning' %}
+        bg-yellow-400 
+        {% elif message.tags == 'success' %}
+        bg-green-500
+        {% endif %}
+        
+        ">{{message}}</p>
+        {% endfor %}
+          
+      {% endif %}
+     
+    </div>
+
     <div class="bg-gray-200 mt-5 p-2 mb-10">
       <h2 class="font-semibold text-2xl text-blue-900 ml-5">Add Expenses...</h2>
 
@@ -36,19 +58,18 @@
             name="expense_amount"
             class="h-12 px-3 md:flex-grow w-full sm:mt-0 mt-6 rounded-lg"
           />
+          
        
-          <select name="expense_category" class="h-12 px-3 md:flex-grow w-full sm:mt-0 mt-6 rounded-lg"  id="">
+          <select name="expense_category" required class="h-12 px-3 md:flex-grow w-full sm:mt-0 mt-6 rounded-lg" >
+            <option></option>
 
             {% for cat in  categories%}
-              
-              {% for key, value in cat.items %}
-                {% if expense.category == value or expense.category == key %}
-                <option value="{{key}}" selected>{{value}}</option>
+                {% if expense.category == cat %}
+                <option value="cat" selected>{{cat}}</option>
                 {% else %}
-                <option value="{{key}}">{{value}}</option>
+                <option value="{{cat}}">{{cat}}</option>
                 {% endif %}
-              {% endfor %}
-           
+             
             {% endfor %}
           
           </select>
@@ -148,20 +169,43 @@
     </div>
 
     <div class="mt-24 lg:flex sm:mx-10 mx-3 rounded" style="column-gap: 3em">
-      <div class="flex-1 bg-gray-200 h-64">
+      <div class="flex-1 bg-gray-200 h-64 overflow-y-auto">
+        
         <div
-          class="font-semibold text-2xl flex flex-col items-center justify-center shadow-md h-16"
-        >
+          class="font-semibold text-2xl flex flex-col items-center justify-center shadow-md h-16">
           <p>Past 30 Days Sum Expenses</p>
         </div>
+
+
+
+        <div class="py-10" id="exp_30_days">
+        
+        {% for exp  in past_30_days_sum_expenses %}
+
+        <div class="text-2xl text-center mb-6" >
+          <p class="font-semibold">{{exp.created_date | date}}</p>
+          <p class="font-bold text-green-600 ">${{exp.sum | intcomma}}</p>
+        </div>
+        {% endfor %}
+          
+      </div>
       </div>
 
-      <div class="flex-1 bg-gray-200 h-64 lg:mt-0 mt-10">
+      <div class="flex-1 bg-gray-200 h-64 lg:mt-0 mt-10 overflow-y-auto" >
         <div
-          class="font-semibold text-2xl flex flex-col items-center justify-center shadow-md h-16"
-        >
+          class="font-semibold text-2xl flex flex-col items-center justify-center shadow-md h-16">
           <p>Categorical Expenses</p>
         </div>
+
+        <div class="py-10" id="categories">
+        {% for exp  in categorical_expenses %}
+        <div class="text-2xl text-center mb-6">
+          <p class="font-semibold">{{exp.category |capfirst}}</p>
+          <p class="font-bold text-green-600">${{exp.sum | intcomma}}</p>
+        </div>
+        {% endfor %}
+
+      </div>
       </div>
     </div>
 
@@ -170,6 +214,8 @@
 
 
     <h1 class="font-light text-5xl mt-16 ml-10">Expense Charts</h1>
+
+    <p style="display: none;" id="categoriesFromView">{{categories}}</p>
 
     <div
       class="mt-10 sm:mx-10 mx-3 lg:flex rounded mb-48 h-auto"
@@ -203,34 +249,83 @@
 
     <script>
 
+      var cts= document.getElementById('categories').getElementsByTagName('div')
+      var dailydiv= document.getElementById('exp_30_days').getElementsByTagName('div')
+
+      console.log(dailydiv)
+      var categs = []
+      var cat_amount = []
+
+      var daily = []
+      var daily_amount = []
+      for (let i = 0; i < cts.length; i++) {
+        
+        if( i% 2 == 1){
+          categs.push(cts[i].children[0].textContent)
+          
+          cat_amount.push(cts[i].children[1].textContent.replace('$', '').replace(',', ''))
+        }else{
+          categs.push(cts[i].children[0].textContent)
+          cat_amount.push(cts[i].children[1].textContent.replace('$', '').replace(',', ''))
+        }
+        
+      }
+
+
+      for (let i = 0; i < dailydiv.length; i++) {
+        
+        if( i% 2 == 1){
+          daily.push(dailydiv[i].children[0].textContent)
+          
+          daily_amount.push(dailydiv[i].children[1].textContent.replace('$', '').replace(',', ''))
+        }else{
+          daily.push(dailydiv[i].children[0].textContent)
+          daily_amount.push(dailydiv[i].children[1].textContent.replace('$', '').replace(',', ''))
+        }
+        
+      }
+      categs= categs.filter(item => item)
+      cat_amount= cat_amount.filter(item => item)
+
+
       var categoryCtx = document.getElementById('dataOfCategoryExpenses').getContext('2d')
       var expensesCtx = document.getElementById('dataOfDailyExpense').getContext('2d')
-      var  catts = Array('Att', 'Damn', 'Shit')
+      var datas = document.getElementById('categoriesFromView').innerHTML
+
+      var  catts = Array(datas)
       console.log(catts)
+
+   
       var myChart = new Chart(categoryCtx, {
         type: 'pie',
-        data: {  labels: catts,
+        data: {  labels: categs,
           datasets: [ {
           label : 'Number of Categories',
-          data: [200, 433],  backgroundColor: ['rgba(40, 90, 120, 0.6)', 'rgba(120, 90, 200, 0.6)'],
+          data: cat_amount,  backgroundColor: ['rgba(40, 90, 120, 0.6)', 'rgba(120, 90, 200, 0.6)', 'rgba(202, 80, 109, 0.6)', 'rgba(40, 40, 100, 0.6)'],
 
-          borderColor: ['rgb(80,80,80)', 'rgb(40, 40, 40)'], borderWidth: 1  } ]
+          borderWidth: 1  } ]
         }
       })
 
      
-      var myChart = new Chart(expensesCtx, {
-        type: 'bar',
-        data: {  labels: catts,
+      var myChartx = new Chart(expensesCtx, {
+        type: 'line',
+        data: {  labels: daily,
           datasets: [ {
-          label : 'Number of Categories',
-          data: [200, 433],  backgroundColor: ['#77492424', '#e7f23254'],
+          label : 'Daily Expense Sum',
+          data: daily_amount,  backgroundColor: ['rgba(28, 80, 201, 0.4)'],
 
-          borderColor: ['rgb(80,80,80)', 'rgb(40, 40, 40)'], borderWidth: 1  } ]
+          borderWidth: 1  } ]
         }
       })
 
       
+      var messagebox = document.getElementById('msg')
+      if (messagebox.style.display != 'none'){
+        setTimeout(()=>{
+          messagebox.style.display= 'none';
+        }, 2500)
+      }
 
 
     </script>
