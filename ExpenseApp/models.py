@@ -12,9 +12,7 @@ class Expense(models.Model):
     amount = models.DecimalField(_(""), max_digits=10, decimal_places=2)
     category = models.CharField(_(""), max_length=50)
     owner = models.ForeignKey(User, verbose_name=_(""), on_delete=models.CASCADE, blank=True, null=True)
-    created_date = models.DateTimeField(_("") ,blank=True, null=True, default= datetime.datetime.now()
-                                        # , auto_now_add=True
-                                        )
+    created_date = models.DateTimeField(_("") , auto_now_add=True)
     updated_date = models.DateTimeField(_(""), auto_now=True)
 
     def __str__(self):

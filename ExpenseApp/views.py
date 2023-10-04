@@ -2,14 +2,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Expense
 from django.contrib import messages
 from django.db.models import Sum
-from django.utils import timezone
 import datetime
-import json
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
 # Create your views here.
 
 categories = ["Miscellaneous", "Food", "Shoes", "Wears", "Tax", 'Bills']
 
-
+@login_required(login_url = '/login')
 def index(request):
     expense = None
 
@@ -21,9 +22,6 @@ def index(request):
         amount = request.POST['expense_amount']
         category = request.POST['expense_category']
 
-        if not request.user.is_authenticated:
-            messages.error(request, 'You are not logged in!')
-            return redirect('/')
 
         if category == "":
             messages.warning(request, 'No category selected')
@@ -67,3 +65,50 @@ def delete(request, id):
     messages.success(request, 'Expense record deleted successfully.')
     return redirect('/')
 
+
+def loginuser(request):
+    if request.user.is_authenticated:
+        return redirect('/')
+    
+    if request.method == 'POST':
+        auth = authenticate(request, username= request.POST['username'], password = request.POST['password1'])
+        if auth:
+            login(request, auth)
+            return redirect('/')
+        else:
+            messages.error(request, 'Could not login.')
+            return redirect('/new-user')
+        
+    return render(request, 'signin.html')
+
+
+
+def signup(request):
+    if request.user.is_authenticated:
+        return redirect('/')
+    
+    if request.method == 'POST':
+        if not request.POST['password1'] == request.POST['password2']:
+            messages.error(request, 'Your passwords don\t match')
+            return redirect('new-user')
+        
+        user = User.objects.create(first_name = request.POST['firstname'], last_name = request.POST['lastname'], username= request.POST['username'])
+        user.set_password(request.POST['password1'])
+        user.save()
+        messages.success(request, 'Your account has been created successfully.')
+
+        auth = authenticate(request=request, username= request.POST['username'], password = request.POST['password1'])
+
+        if auth:
+            login(request, auth)
+            return redirect(to='/')
+        else:
+            messages.error(request, 'Could not login you in.')
+            return redirect(request.path)
+        
+    return render(request, 'signup.html')
+
+
+def logoutuser(request):
+    logout(request)
+    return redirect('loginuser')
